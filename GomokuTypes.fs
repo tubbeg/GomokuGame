@@ -1,4 +1,4 @@
-module GomukoTypes
+module GomokuTypes
 
 type Color =
     | Red

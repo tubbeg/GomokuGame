@@ -1,6 +1,7 @@
 ﻿
-open GomukoTypes
-open GomukoBoard
+open GomokuTypes
+open GomokuBoard
+
 [<EntryPoint>]
 let main args =
     let myPiece = Piece(Red, (3,3))

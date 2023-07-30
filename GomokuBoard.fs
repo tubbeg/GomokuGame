@@ -1,5 +1,5 @@
-module GomukoBoard
-open GomukoTypes
+module GomokuBoard
+open GomokuTypes
 
 type Board(initialBoard) =
     class

@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="GomukoTypes.fs" />
-    <Compile Include="GomukoBoard.fs" />
+    <Compile Include="GomokuTypes.fs" />
+    <Compile Include="GomokuBoard.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
