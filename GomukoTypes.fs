@@ -8,3 +8,5 @@ and Cell =
     | Empty of Position
 and Position =
     int*int
+type Area =
+    Cell list list
