@@ -1,14 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="GomokuTypes.fs" />
     <Compile Include="GomokuBoard.fs" />
+    <Compile Include="GomokuGame.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
-
 </Project>
