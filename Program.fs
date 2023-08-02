@@ -5,14 +5,9 @@ open GomokuGame
 
 
 let victoryPrinter result =
-    let x,y,z = result
-    match x,y,z with
-    | Some(Red), _,_ -> printfn "Red has won!"
-    | Some(Blue),_,_ -> printfn "Blue has won!"
-    | _, Some(Red), _ -> printfn "Red has won!"
-    | _, Some(Blue), _ -> printfn "Blue has won!"
-    | _,_,Some(Red) -> printfn "Red has won!"
-    | _,_,Some(Blue) -> printfn "Blue has won!"
+    match result with
+    | Some(Red) -> printfn "Red has won!"
+    | Some(Blue) -> printfn "Blue has won!"
     | _ -> ()
 
 
@@ -46,20 +41,27 @@ let test5inRow (b : Board) =
     //b.captureCell (9, 4) Blue |> victoryPrinter
     b.captureCell (1, 1) Red |> victoryPrinter
     b.captureCell (2, 2) Red |> victoryPrinter
-    b.captureCell (3, 3) Blue |> victoryPrinter
+    b.captureCell (3, 3) Red |> victoryPrinter
     b.captureCell (4, 4) Red |> victoryPrinter
-
     b.captureCell (5, 5) Red |> victoryPrinter
-    b.captureCell (6, 6) Red |> victoryPrinter
-    b.captureCell (7, 7) Red |> victoryPrinter
-    b.captureCell (8, 8) Blue |> victoryPrinter
-    b.captureCell (8, 9) Blue |> victoryPrinter
+    
+
+    
     b.captureCell (8, 10) Blue |> victoryPrinter
+    b.captureCell (8, 9) Blue |> victoryPrinter
     b.captureCell (8, 11) Blue |> victoryPrinter
-    b.captureCell (8, 12) Blue |> victoryPrinter
-    //b.captureCell (1, 5) Red |> victoryPrinter
-    //b.captureCell (1, 6) Blue |> victoryPrinter
-    //b.captureCell (6, 6) Red |> victoryPrinter
+    //b.captureCell (8, 12) Blue |> victoryPrinter
+    b.captureCell (8, 13) Blue |> victoryPrinter
+
+
+    b.captureCell (9, 13) Blue |> victoryPrinter
+    b.captureCell (10, 13) Blue |> victoryPrinter
+    b.captureCell (11, 13) Blue |> victoryPrinter
+    //b.captureCell (12, 13) Blue |> victoryPrinter
+    b.captureCell (13, 13) Blue |> victoryPrinter
+    
+    
+
     printfn "Captured cells: \n"
     
     b.printBoard(None, None)
@@ -102,13 +104,26 @@ let testGomokuGame() =
     let game = new GomokuGame(None)
     game.init(Turn(Red)) |> statePrinter |> boardPrinter
 
-    game.update((13,15)) |> statePrinter |> boardPrinter
 
     game.update(3,1) |> statePrinter |> boardPrinter
     game.update(12,3) |> statePrinter |> boardPrinter
-    game.update(13,4) |> statePrinter |> boardPrinter
-    game.update(7,3) |> statePrinter |> boardPrinter
+
+    game.update(3,2) |> statePrinter |> boardPrinter
+    game.update(11,3) |> statePrinter |> boardPrinter
+
+    game.update(3,3) |> statePrinter |> boardPrinter
+    game.update(10,3) |> statePrinter |> boardPrinter
+
+
+
+    game.update(3,4) |> statePrinter |> boardPrinter
     game.update(9,3) |> statePrinter |> boardPrinter
+
+
+    game.update(3,5) |> statePrinter |> boardPrinter
+    game.update(8,3) |> statePrinter |> boardPrinter
+    
+    
 
     ()
 
@@ -122,9 +137,9 @@ let main args =
     board.printBoard()
     board.captureCell (3, 2) Blue |> ignore
     board.printBoard()*)
-    //test5inRow board
+    test5inRow board
 
-    testGomokuGame()
+    //testGomokuGame()
 
     0
 

@@ -18,3 +18,7 @@ type GameState =
     | BlueWin
     | Running
     | Uninitialized
+type Dimension =
+    | X
+    | Y
+    | Z

@@ -37,26 +37,16 @@ type GomokuGame(config) =
             | Running ->
                 match playerState with
                 | Some(Turn(c)) ->
-                    match board.captureCell position c with
-                    | Some(Red), _,_ ->
+                    let result = board.captureCell position c
+                    match result with
+                    | Some(Red) ->
                         gameState <- RedWin
                         playerState, gameState, board.getBoard()
-                    | Some(Blue),_,_ ->
+                    | Some(Blue) ->
                         gameState <- BlueWin
                         playerState, gameState, board.getBoard()
-                    | _,Some(Red),_ ->
-                        gameState <- RedWin
-                        playerState, gameState, board.getBoard()
-                    | _,Some(Blue),_ ->
-                        gameState <- BlueWin
-                        playerState, gameState, board.getBoard()
-                    | _,_,Some(Red) ->
-                        gameState <- RedWin
-                        playerState, gameState, board.getBoard()
-                    | _,_,Some(Blue) ->
-                        gameState <- BlueWin
-                        playerState, gameState, board.getBoard()
-                    | _,_,_ -> 
+                    | None -> 
+                        printfn "Running with response: %A" result
                         let newTurn =
                             match c with
                             | Red -> Blue

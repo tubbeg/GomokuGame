@@ -34,80 +34,58 @@ type Board(initialBoard : option<Area>, boardSize : option<Size>) =
                 true
             | _ -> false
 
-        let testOneDimListHorizontal list target =
-            let rec recursiveTest2 l red blue lastPos target =
-                match l, red, blue, lastPos with
-                | _, t,_,_ when t=target ->
-                    Some(Red)
-                | _, _,t,_ when t=target ->
-                    Some(Blue)
-                | Piece(Red, (x,y))::remainder, red, _, (a,_) when a=(x-1) ->
-                    //update last known cell (x,y)
-                    recursiveTest2 remainder (red+1) 0 (x,y) target
-                | Piece(Blue, (x,y))::remainder, _, blue, (a,_) when a=(x-1) ->
-                    //update last known cell (x,y)
-                    recursiveTest2 remainder 0 (blue+1) (x,y) target
-                | Empty(_)::remainder, red, blue, (a,b) ->
-                    //ignore empty cell positions (a,b) instead of (x,y)
-                    recursiveTest2 remainder red blue (a,b) target
-                | _ ->
-                    //printfn "Fail case: %A" c
-                    None
-            recursiveTest2 list 0 0 (0,0) target
 
-        let testOneDimListVertical list target =
-            let rec recursiveTest2 l red blue lastPiecePos target =
-                match l, red, blue, lastPiecePos with
-                | _, t,_,_ when t=target ->
-                    Some(Red)
-                | _, _,t,_ when t=target ->
-                    Some(Blue)
-                | Piece(Red, (x,y))::remainder, red, _, (_,b) when b=(y-1) ->
-                    //update last known cell (x,y)
-                    recursiveTest2 remainder (red+1) 0 (x,y) target
-                | Piece(Blue, (x,y))::remainder, _, blue, (_,b) when b=(y-1) ->
-                    //update last known cell (x,y)
-                    recursiveTest2 remainder 0 (blue+1) (x,y) target
-                | Empty(_)::remainder, red, blue, (a,b) ->
-                    //ignore empty cell positions (a,b) instead of (x,y)
-                    recursiveTest2 remainder red blue (a,b) target
-                | _ ->
-                    //printfn "Fail case: %A" c
-                    None
-            recursiveTest2 list 0 0 (0,0) target
+        //converts the area into tuple list
+        let transformAreaToTuple (l : Area) color =
+            let rec transformListCellToTuple  (lst) =
+                match lst with
+                | Piece(_, pos)::rem ->
+                    pos::transformListCellToTuple rem
+                | _ -> []
+            
+            let filterCells color lst  =
+                let pattern (e : Cell) c =
+                    match e with
+                    | Piece(color,_) when c=color -> true
+                    | _ -> false
+                lst |> List.filter(fun e -> pattern e color)
 
-        let testOneDimListZigZack list target =
-            let rec recursiveTest2 l red blue lastPos target =
-                match l, red, blue, lastPos with
-                | _, t,_,_ when t=target ->
-                    Some(Red)
-                | _, _,t,_ when t=target ->
-                    Some(Blue)
-                | Piece(Red, (x,y))::remainder, red, _, (a,b) when (a=x-1 && b=y-1) ->
-                    //update last known cell (x,y)
-                    recursiveTest2 remainder (red+1) 0 (x,y) target
-                | Piece(Blue, (x,y))::remainder, _, blue, (a,b) when (a=x-1 && b=y-1) ->
-                    //update last known cell (x,y)
-                    recursiveTest2 remainder 0 (blue+1) (x,y) target
-                | Empty(pos)::remainder, red, blue, (a,b) ->
-                    //ignore empty cell positions (a,b) instead of (x,y)
-                    recursiveTest2 remainder red blue (a,b) target
-                | _ ->
-                    //printfn "Fail case: %A" c
-                    None
-            recursiveTest2 list 0 0 (0,0) target
+            l |> filterCells color |> transformListCellToTuple
 
-        let testFor5inARow area target =
-            let myTarget =
-                match target with
-                | None -> defaultTarget
-                | Some(t) -> t
-            //all of these could be tested in a single recursive function,
-            //this solution is ineffiecent, but it's easy to understand
-            let ver = testOneDimListVertical area myTarget
-            let hor = testOneDimListHorizontal area myTarget
-            let zig = testOneDimListZigZack area myTarget
-            ver,hor,zig
+        //tests if there's a pattern in the pieces positions
+        let testTarget area target color =
+
+            let testTargetsInARow t (list : Position list) =
+                //printfn "Testing list %A" lis
+                let rec targetsInRow target (current : int*int*int) (last : Position) (list : Position list)  =
+                    let hasReachedTarget target current =
+                        match target, current with
+                        | (x,y,z), (a,b,c) when (a=x||b=y||z=c) -> true
+                        | _ -> false
+                    let lastX,lastY = last
+                    match target, current, list with
+                    | targ, curr, _ when (hasReachedTarget targ curr) -> true
+                    | _,(cx,cy,cz), (a,b)::rem when (a=lastX+1) ->
+                        targetsInRow target (cx+1, cy, cz) (a,b) rem
+                    | _,(cx,cy,cz), (a,b)::rem when (b=lastY+1) ->
+                        targetsInRow target (cx, cy+1, cz) (a,b) rem
+                    | _,(cx,cy,cz), (a,b)::rem when (a=lastX+1&&b=lastY+1) ->
+                        targetsInRow target (cx, cy, cz+1) (a,b) rem
+                    | _,_, i::rem ->
+                        targetsInRow target (1,1,1) i rem
+                    | _,_,_ -> false
+                let current = 1,1,1
+                let last = 0,0
+                let target = t,t,t
+                targetsInRow target current last list
+
+            let result = transformAreaToTuple area color |> testTargetsInARow target
+            match result with
+            | true ->
+                Some(color)
+            | false ->
+                None
+
         //constructor
         do
             match initialBoard, boardSize with
@@ -124,11 +102,11 @@ type Board(initialBoard : option<Area>, boardSize : option<Size>) =
             | true ->
                 //2. Update board
                 board <- updateBoard board position color
-                testFor5inARow board None
+                testTarget board defaultTarget color
             | false ->
                 //3. Optional: Print error 
-                eprintfn "Error! Cell is not OK!"
-                None, None, None
+                eprintfn "Error! Cell is not OK! Position: %A" position
+                None
 
         member this.getBoard() =
             board
