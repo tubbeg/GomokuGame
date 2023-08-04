@@ -1,0 +1,13 @@
+{
+  "name": "gomukogame",
+  "version": "1.0.0",
+  "description": "just a simple program which implements a Gomoku (5 in a row) game",
+  "main": "fable/Program.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,16 +1,16 @@
 module GomokuBoard
 open GomokuTypes
 
-type Board(initialBoard : option<Area>, boardSize : option<Size>) =
+//user of Board class has to maintain state
+type Board() =
     class
         let defaultSize = 15,15
         let defaultTarget = 5
-        let mutable board : Area = []
-
-        let mutable size = (0,0)
-
-        let defaultCells =
-            let x,y = defaultSize
+        let generateBoard (size : option<Size>) =
+            let x,y = 
+                match size with
+                | None -> defaultSize
+                | Some(a,b) -> a,b
             [for i in 1 .. x do
                 for j in 1 .. y ->
                     Empty(j,i)]
@@ -18,7 +18,8 @@ type Board(initialBoard : option<Area>, boardSize : option<Size>) =
         let updateBoard area position color =
             let cellPattern c =
                 match c with
-                | Empty(pos) when pos=position -> Piece(color,pos)
+                | Empty(pos) when pos=position ->
+                    Piece(color,pos)
                 | c -> c
             area |> List.map(fun e -> cellPattern e)
 
@@ -33,106 +34,99 @@ type Board(initialBoard : option<Area>, boardSize : option<Size>) =
             | Some(_) ->
                 true
             | _ -> false
+        
+        let filterEmptyCells  color list =
+            list |> List.where(fun e ->
+                match e with
+                | Piece(c,_) when c=color -> true
+                | _ -> false
+            )
 
-
-        //converts the area into tuple list
-        let transformAreaToTuple (l : Area) color =
-            let rec transformListCellToTuple  (lst) =
+        let convertCellToTuple list : (Position list) =
+            let rec convertListToTuple lst =
                 match lst with
-                | Piece(_, pos)::rem ->
-                    pos::transformListCellToTuple rem
+                | Piece(_, p)::rem -> p::convertListToTuple rem
                 | _ -> []
-            
-            let filterCells color lst  =
-                let pattern (e : Cell) c =
-                    match e with
-                    | Piece(color,_) when c=color -> true
-                    | _ -> false
-                lst |> List.filter(fun e -> pattern e color)
+            list |> convertListToTuple
 
-            l |> filterCells color |> transformListCellToTuple
+        //when the current number of pieces in a row matches the target then it
+        //means the player has won!
+        let hasReachedTarget target current =
+            match target, current with
+            | (x,y,z), (a,b,c) when (a=x-1||b=y-1||c=z-1) -> true
+            | _ -> false
+
+        let matchesXYX tuple lastCell dimension =
+            let a,b = tuple
+            match lastCell, dimension with
+            | (x,_), X when (a=x+1) -> true
+            | (_,y), X when (b=y+1) -> true
+            | (x,y), X when (a=x+1&&b=y+1) -> true
+            | c ->
+                //printfn "Fail case: %A" c
+                false
+
+        let testTargetsInARow t (list : Position list) =
+            //printfn "Testing list %A" lis
+            let targ = t,t,t
+            let resetCurrent = (1,1,1)
+            let initPos = (0,0)
+            let rec targetsInRow target (last : Position)  (list : Position list) current  =
+                let addToCurrent (cx,cy,cz) dim =
+                    match dim with
+                    | X ->
+                        (cx+1,cy,cz)
+                    | Y ->
+                        (cx,cy+1,cz)
+                    | Z ->
+                        (cx,cy,cz+1)
+                
+                //current = current number of pieces in row
+                match target, current, list with
+                | targ, curr, _ when (hasReachedTarget targ curr) ->
+                    true
+                | _, curr, pos::rem when (matchesXYX  pos last X) ->
+                    addToCurrent curr X |> targetsInRow  target pos rem
+                | _,curr, pos::rem when (matchesXYX  pos last Y) ->
+                    addToCurrent curr Y |> targetsInRow  target pos rem
+                | _,curr, pos::rem when (matchesXYX  pos last Z) ->
+                    addToCurrent curr Z |> targetsInRow  target pos rem
+                | _,_, i::rem ->
+                    targetsInRow target i rem resetCurrent
+                | _,_,_ ->
+                    false
+            resetCurrent |> targetsInRow targ initPos list //target is the same for all dimensions
 
         //tests if there's a pattern in the pieces positions
-        let testTarget area target color =
+        let testTarget (area : Area) target (color : Color) =
+            area
+            |> filterEmptyCells color
+            |> convertCellToTuple
+            |> testTargetsInARow target
 
-            let testTargetsInARow t (list : Position list) =
-                //printfn "Testing list %A" lis
-                let rec targetsInRow target (current : int*int*int) (last : Position) (list : Position list)  =
-                    let hasReachedTarget target current =
-                        match target, current with
-                        | (x,y,z), (a,b,c) when (a=x||b=y||z=c) -> true
-                        | _ -> false
-                    let lastX,lastY = last
-                    match target, current, list with
-                    | targ, curr, _ when (hasReachedTarget targ curr) -> true
-                    | _,(cx,cy,cz), (a,b)::rem when (a=lastX+1) ->
-                        targetsInRow target (cx+1, cy, cz) (a,b) rem
-                    | _,(cx,cy,cz), (a,b)::rem when (b=lastY+1) ->
-                        targetsInRow target (cx, cy+1, cz) (a,b) rem
-                    | _,(cx,cy,cz), (a,b)::rem when (a=lastX+1&&b=lastY+1) ->
-                        targetsInRow target (cx, cy, cz+1) (a,b) rem
-                    | _,_, i::rem ->
-                        targetsInRow target (1,1,1) i rem
-                    | _,_,_ -> false
-                let current = 1,1,1
-                let last = 0,0
-                let target = t,t,t
-                targetsInRow target current last list
-
-            let result = transformAreaToTuple area color |> testTargetsInARow target
-            match result with
-            | true ->
-                Some(color)
-            | false ->
-                None
-
-        //constructor
-        do
-            match initialBoard, boardSize with
-            | Some(b), Some(s) ->
-                board <- b
-                size <- s
-            | _ ->
-                board <- defaultCells
-                size <- defaultSize
-        member this.captureCell position color =
+        member this.captureCell t  position color board =
             
             //1. Verify cell
             match verifyCapture position board with
             | true ->
-                //2. Update board
-                board <- updateBoard board position color
-                testTarget board defaultTarget color
+                //2. Update 
+                let update = updateBoard board position color
+                let myTarget =
+                    match t with
+                    | None -> defaultTarget
+                    | Some(targ) -> targ
+                match testTarget board myTarget color with
+                | true -> Some(color), update
+                | _ -> None, update
             | false ->
                 //3. Optional: Print error 
                 eprintfn "Error! Cell is not OK! Position: %A" position
-                None
+                None, board
 
-        member this.getBoard() =
-            board
+        member this.getNewBoard size : Area =
+            generateBoard size
 
-        member this.resetBoard() =
-            board <- defaultCells
-        member this.setBoard b =
-            board <- b
+        member this.resetToDefaultBoard() : Area =
+            generateBoard None
 
-
-        //support function, used for debugging purposes, not for production
-        member this.printBoard (area : option<Area>, s : option<Size>) =
-            let myBoard, (a,_) =
-                match area, s with
-                | Some(a), Some(boardSize) -> a, boardSize
-                | _ -> board, size
-            let printChar e =
-                match e with
-                | Empty((x,_)) when x<a -> "C"
-                | Piece(Red, (x,_)) when x<a  -> "R"
-                | Piece(Blue, (x,_)) when x<a -> "B"
-                | Empty((x,_)) when x=a -> "C" + "\n"
-                | Piece(Red, (x,_)) when x=a  -> "R" + "\n"
-                | Piece(Blue, (x,_)) when x=a -> "B" + "\n"
-                | _ -> "ERROR"
-            let printItem item =
-                printf "%s" (printChar item)
-            for item in myBoard do printItem item
     end

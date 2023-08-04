@@ -2,73 +2,71 @@ module GomokuGame
 open GomokuBoard
 open GomokuTypes
 
-type GomokuGame(config) =
+type GomokuGame(target) =
     class
 
-        let mutable playerState : option<PlayerStates> = None
-        let mutable board : Board = new Board(None, None)
+        let mutable playerState : PlayerStates option = None
+        let _board = new Board()
+
+        let mutable _target = 5
 
         let mutable gameState = Uninitialized
 
-        do
-            match config with
-            | Some(a,s) ->
-                board <- new Board(a,s)
-            | _ ->
-                board <- new Board(None,None)
 
-        member this.init playerOne =
+        //constructor
+        do
+            match target with
+            | Some(t) ->
+                _target <- t
+            | None ->
+                ()
+
+        member this.init playerOne size =
             playerState <- Some(playerOne)
             gameState <- Running
-            playerState, gameState, board.getBoard()
+            (playerState, gameState, _board.getNewBoard size)
 
         member this.resetGame playerOne config =
             playerState <- Some(playerOne)
             gameState <- Running
-            match config with
-            | Some(a,s) ->
-                board <- new Board(a,s)
-            | _ ->
-                board <- new Board(None,None)
-            playerState, gameState, board.getBoard()
+            let newBoard =
+                match config with
+                | Some(b), _ -> b
+                | _, Some(s) -> _board.getNewBoard s
+                | _ -> _board.resetToDefaultBoard()
+            playerState, gameState, newBoard
 
-        member this.update position =
+        member this.update position board =
             match gameState with
             | Running ->
                 match playerState with
                 | Some(Turn(c)) ->
-                    let result = board.captureCell position c
-                    match result with
-                    | Some(Red) ->
-                        gameState <- RedWin
-                        playerState, gameState, board.getBoard()
-                    | Some(Blue) ->
-                        gameState <- BlueWin
-                        playerState, gameState, board.getBoard()
-                    | None -> 
-                        printfn "Running with response: %A" result
+                    match _board.captureCell (Some _target)  position c board with
+                    | Some(c),b ->
+                        gameState <- Win(c)
+                        playerState, gameState, b
+                    | None,b -> 
+                        //printfn "Running with response: %A" result
                         let newTurn =
                             match c with
                             | Red -> Blue
                             | _ -> Red
                         playerState <- Some(Turn(newTurn))
                         gameState <- Running
-                        playerState, gameState, board.getBoard()
+                        playerState, gameState, b
                 | _ ->
                     eprintfn "Error. Uninitialized game!"
                     gameState <- Uninitialized
-                    playerState, gameState, board.getBoard()
+                    playerState, gameState, []
             | Uninitialized ->
                 eprintfn "Game is uninitalized!"
-                playerState, gameState, board.getBoard()
+                playerState, gameState, board
             | _ ->
                 eprintfn "Player with %A has already won the game!" gameState
-                playerState, gameState, board.getBoard()
+                playerState, gameState, board
 
         member this.getCurrentTurn() = playerState
 
         member this.getGameState() = gameState
-
-        member this.getBoard() = board.getBoard()
 
     end

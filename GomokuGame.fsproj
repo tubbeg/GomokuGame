@@ -9,4 +9,7 @@
     <Compile Include="GomokuGame.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Fable.Node" Version="1.2.0" />
+  </ItemGroup>
 </Project>
